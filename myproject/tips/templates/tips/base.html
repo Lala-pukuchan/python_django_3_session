@@ -1,0 +1,25 @@
+<!-- myproject/tips/templates/tips/base.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>My Tips Site</title>
+</head>
+<body>
+    <nav>
+        <!-- ここに"Hello user!"メッセージを表示する -->
+        {% if request.session.anonymous_name %}
+            Hello {{ request.session.anonymous_name }}!
+        {% else %}
+            <!-- 名前が無い場合のフォールバック -->
+            Hello Guest!
+        {% endif %}
+    </nav>
+
+    <hr>
+
+    {% block content %}
+    {% endblock %}
+
+</body>
+</html>
