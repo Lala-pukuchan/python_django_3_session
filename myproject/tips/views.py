@@ -129,6 +129,11 @@ def tip_downvote(request, tip_id):
 @login_required
 def tip_delete(request, tip_id):
     tip = get_object_or_404(Tip, id=tip_id)
-    tip.delete()
-    messages.success(request, "Tip has been deleted.")
+    # if user is the author or has permission to delete tips
+    if (tip.author == request.user) or (request.user.has_perm('tips.delete_tip')):
+        tip.delete()
+        messages.success(request, "Tip has been deleted.")
+    else:
+        messages.error(request, "You do not have permission to delete this tip.")
+
     return redirect('homepage')

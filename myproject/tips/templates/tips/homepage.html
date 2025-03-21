@@ -13,9 +13,11 @@
 
     <!-- ログイン時のみ操作可 -->
     {% if user.is_authenticated %}
-    <a href="{% url 'tip_upvote' tip.id %}">Upvote</a> |
-    <a href="{% url 'tip_downvote' tip.id %}">Downvote</a> |
-    <a href="{% url 'tip_delete' tip.id %}">Delete</a>
+        <a href="{% url 'tip_upvote' tip.id %}">Upvote</a> |
+        <a href="{% url 'tip_downvote' tip.id %}">Downvote</a> |
+        {% if tip.author == user or perms.tips.delete_tip %}
+            <a href="{% url 'tip_delete' tip.id %}">Delete</a>
+        {% endif %}
     {% endif %}
   </li>
   {% endfor %}
