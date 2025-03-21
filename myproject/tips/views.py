@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
@@ -9,7 +9,36 @@ from .models import Tip
 from .forms import TipForm
 
 def homepage(request):
-    return render(request, 'tips/homepage.html')
+    # 1) Get existing tips list (ordered by newest first)
+    tips = Tip.objects.order_by('-created_at')
+
+    # 2) Process new post if POST method
+    if request.method == 'POST':
+        # Only accept posts from logged-in users
+        if request.user.is_authenticated:
+            form = TipForm(request.POST)
+            if form.is_valid():
+                tip = form.save(commit=False)
+                tip.author = request.user  # Set authenticated user as author
+                tip.save()
+            # Redirect to homepage regardless of success or failure
+            return redirect('homepage')
+        else:
+            # Unauthorized users cannot post
+            return redirect('homepage')
+
+    # 3) Display list and form if GET method
+    else:
+        if request.user.is_authenticated:
+            form = TipForm()
+        else:
+            form = None
+
+    context = {
+        'tips': tips,
+        'form': form,
+    }
+    return render(request, 'tips/homepage.html', context)
 
 def register_view(request):
     # Redirect to home if already logged in
@@ -58,35 +87,48 @@ def logout_view(request):
     auth_logout(request)
     return redirect('homepage')
 
+@login_required
+def tip_upvote(request, tip_id):
+    tip = get_object_or_404(Tip, id=tip_id)
+    user = request.user
 
-def homepage(request):
-    # 1) 既存のTip一覧を取得 (新しい順で並べる例)
-    tips = Tip.objects.order_by('-created_at')
+    # Remove from downvoters if already downvoted
+    if tip.downvoters.filter(id=user.id).exists():
+        tip.downvoters.remove(user)
 
-    # 2) POSTメソッドなら新規投稿を処理
-    if request.method == 'POST':
-        # ログイン中のみ投稿を受け付ける
-        if request.user.is_authenticated:
-            form = TipForm(request.POST)
-            if form.is_valid():
-                tip = form.save(commit=False)
-                tip.author = request.user  # 認証ユーザーをauthorにセット
-                tip.save()
-            # 成功・失敗にかかわらず再度一覧を表示
-            return redirect('homepage')
-        else:
-            # 未ログインは投稿不可
-            return redirect('homepage')
-
-    # 3) GETメソッドなら一覧 + フォームを表示
+    # Toggle upvote: remove if exists, add if not
+    if tip.upvoters.filter(id=user.id).exists():
+        tip.upvoters.remove(user)
+        messages.info(request, "Upvote canceled.")
     else:
-        if request.user.is_authenticated:
-            form = TipForm()
-        else:
-            form = None
+        tip.upvoters.add(user)
+        messages.success(request, "You upvoted the tip.")
 
-    context = {
-        'tips': tips,
-        'form': form,
-    }
-    return render(request, 'tips/homepage.html', context)
+    return redirect('homepage')
+
+
+@login_required
+def tip_downvote(request, tip_id):
+    tip = get_object_or_404(Tip, id=tip_id)
+    user = request.user
+
+    # Remove from upvoters if already upvoted
+    if tip.upvoters.filter(id=user.id).exists():
+        tip.upvoters.remove(user)
+
+    # Toggle downvote: remove if exists, add if not
+    if tip.downvoters.filter(id=user.id).exists():
+        tip.downvoters.remove(user)
+        messages.info(request, "Downvote canceled.")
+    else:
+        tip.downvoters.add(user)
+        messages.warning(request, "You downvoted the tip.")
+
+    return redirect('homepage')
+
+@login_required
+def tip_delete(request, tip_id):
+    tip = get_object_or_404(Tip, id=tip_id)
+    tip.delete()
+    messages.success(request, "Tip has been deleted.")
+    return redirect('homepage')
