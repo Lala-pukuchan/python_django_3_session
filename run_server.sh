@@ -12,4 +12,5 @@ pip install -r requirement.txt
 echo "Virtualenv django_venv is activated."
 # start server
 cd myproject
+python manage.py migrate
 python manage.py runserver

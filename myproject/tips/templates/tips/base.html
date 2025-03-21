@@ -1,4 +1,4 @@
-<!-- myproject/tips/templates/tips/base.html -->
+<!-- tips/templates/tips/base.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -7,19 +7,32 @@
 </head>
 <body>
     <nav>
-        <!-- ここに"Hello user!"メッセージを表示する -->
-        {% if request.session.anonymous_name %}
-            Hello {{ request.session.anonymous_name }}!
+        {% if user.is_authenticated %}
+            <!-- ログイン中 -->
+            Hello {{ user.username }}!
+            |
+            <a href="{% url 'logout' %}">Logout</a>
         {% else %}
-            <!-- 名前が無い場合のフォールバック -->
-            Hello Guest!
+            <!-- 未ログインの場合はExercise00の匿名ユーザー名を表示 -->
+            Hello {{ request.session.anonymous_name }}!
+            |
+            <a href="{% url 'register' %}">Register</a>
+            |
+            <a href="{% url 'login' %}">Login</a>
         {% endif %}
+        |
+        <a href="{% url 'homepage' %}">Home</a>
     </nav>
-
     <hr>
 
-    {% block content %}
-    {% endblock %}
+    {% if messages %}
+      <ul>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
 
+    {% block content %}{% endblock %}
 </body>
 </html>
