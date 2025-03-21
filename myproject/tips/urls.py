@@ -7,5 +7,4 @@ from tips import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('home/', views.homepage, name='homepage'),  # トップページ
-    path('other/', views.other, name='other'), 
 ]
