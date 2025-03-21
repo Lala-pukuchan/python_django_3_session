@@ -28,6 +28,13 @@
           <a class="vote-button" href="{% url 'tip_downvote' tip.id %}">Downvote</a>
         {% endif %}
       {% endif %}
+
+      <!-- Delete -->
+      {% if user == tip.author or user.reputation|default:0 >= 30 or perms.tips.delete_tip %}
+        <a href="{% url 'tip_delete' tip.id %}" class="vote-button" style="color: red;">Delete</a>
+      {% endif %}
+
+    
     {% endif %}
     
   </li>
