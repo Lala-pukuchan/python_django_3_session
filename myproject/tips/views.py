@@ -112,6 +112,11 @@ def tip_downvote(request, tip_id):
     tip = get_object_or_404(Tip, id=tip_id)
     user = request.user
 
+    # Check permission to downvote
+    if tip.author != user and not user.has_perm('tips.can_downvote_tip'):
+        messages.error(request, "You do not have permission to downvote this tip.")
+        return redirect('homepage')
+
     # Remove from upvoters if already upvoted
     if tip.upvoters.filter(id=user.id).exists():
         tip.upvoters.remove(user)

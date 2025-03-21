@@ -14,7 +14,13 @@
     <!-- ログイン時のみ操作可 -->
     {% if user.is_authenticated %}
         <a href="{% url 'tip_upvote' tip.id %}">Upvote</a> |
-        <a href="{% url 'tip_downvote' tip.id %}">Downvote</a> |
+        
+        <!-- user is author or user has custom permission can_downvote_tip -->
+        {% if tip.author == user or perms.tips.can_downvote_tip %}
+          <a href="{% url 'tip_downvote' tip.id %}">Downvote</a> |
+        {% endif %}
+
+        <!-- user is author or user has model permission delete_tip -->
         {% if tip.author == user or perms.tips.delete_tip %}
             <a href="{% url 'tip_delete' tip.id %}">Delete</a>
         {% endif %}

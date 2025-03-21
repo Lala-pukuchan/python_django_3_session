@@ -9,8 +9,13 @@ class Tip(models.Model):
     upvoters = models.ManyToManyField(User, related_name="upvoted_tips", blank=True)
     downvoters = models.ManyToManyField(User, related_name="downvoted_tips", blank=True)
 
+    # create custome permission
+    class Meta:
+        permissions = [
+            ("can_downvote_tip", "Can downvote tip"),
+        ]
+
     def __str__(self):
-        # 管理画面などで表示される文字列表現
         return f"{self.content[:20]} by {self.author}"
 
     def upvote_count(self):
