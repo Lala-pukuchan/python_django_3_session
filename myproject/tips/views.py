@@ -2,10 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
-from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm, LoginForm
 from .models import Tip
+from accounts.models import CustomUser
 from .forms import TipForm
 
 def homepage(request):
@@ -51,7 +51,7 @@ def register_view(request):
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
             # Create User
-            user = User.objects.create_user(username=username, password=password)
+            user = CustomUser.objects.create_user(username=username, password=password)
             # Login immediately after creation
             auth_login(request, user)
             messages.success(request, f'User {username} has been created and logged in.')
@@ -70,7 +70,7 @@ def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
-            # If authentication is successful, form.user contains the User object
+            # If authentication is successful, form.user contains the CustomUser object
             user = form.user
             # Process login
             auth_login(request, user)
@@ -92,16 +92,25 @@ def tip_upvote(request, tip_id):
     tip = get_object_or_404(Tip, id=tip_id)
     user = request.user
 
+    # author of the tip (CustomUser object)
+    author = tip.author
+
     # Remove from downvoters if already downvoted
     if tip.downvoters.filter(id=user.id).exists():
         tip.downvoters.remove(user)
+        author.reputation += 2
+        author.save()
 
     # Toggle upvote: remove if exists, add if not
     if tip.upvoters.filter(id=user.id).exists():
         tip.upvoters.remove(user)
+        author.reputation -= 5
+        author.save()
         messages.info(request, "Upvote canceled.")
     else:
         tip.upvoters.add(user)
+        author.reputation += 5
+        author.save()
         messages.success(request, "You upvoted the tip.")
 
     return redirect('homepage')
@@ -112,21 +121,32 @@ def tip_downvote(request, tip_id):
     tip = get_object_or_404(Tip, id=tip_id)
     user = request.user
 
+    # author of the tip (CustomUser object)
+    author = tip.author
+
     # Check permission to downvote
-    if tip.author != user and not user.has_perm('tips.can_downvote_tip'):
-        messages.error(request, "You do not have permission to downvote this tip.")
+    if tip.author != user and \
+       not user.has_perm('tips.can_downvote_tip') and \
+       user.reputation < 15:
+        messages.error(request, "You do not have permission to downvote this tip. You need to be author / downvote authorization / at least 15 reputation.")
         return redirect('homepage')
 
     # Remove from upvoters if already upvoted
     if tip.upvoters.filter(id=user.id).exists():
         tip.upvoters.remove(user)
+        author.reputation -= 5
+        author.save()
 
     # Toggle downvote: remove if exists, add if not
     if tip.downvoters.filter(id=user.id).exists():
         tip.downvoters.remove(user)
+        author.reputation += 2
+        author.save()
         messages.info(request, "Downvote canceled.")
     else:
         tip.downvoters.add(user)
+        author.reputation -= 2
+        author.save()
         messages.warning(request, "You downvoted the tip.")
 
     return redirect('homepage')
@@ -134,11 +154,25 @@ def tip_downvote(request, tip_id):
 @login_required
 def tip_delete(request, tip_id):
     tip = get_object_or_404(Tip, id=tip_id)
-    # if user is the author or has permission to delete tips
-    if (tip.author == request.user) or (request.user.has_perm('tips.delete_tip')):
-        tip.delete()
-        messages.success(request, "Tip has been deleted.")
-    else:
-        messages.error(request, "You do not have permission to delete this tip.")
+    user = request.user
+    author = tip.author
+
+    # Check permission to delete
+    if author != user and user.reputation < 30 and not user.has_perm('tips.delete_tip'):
+        messages.error(request, "You need at least 30 rep to delete others' tips. You need to be author / delete authorization / at least 30 reputation.")
+        return redirect('homepage')
+
+    # Calculate count of upvotes and downvotes
+    upvote_count = tip.upvoters.count()
+    downvote_count = tip.downvoters.count()
+
+    # Calculate reputation change after deletion
+    rep_change = 5 * upvote_count - 2 * downvote_count
+    author.reputation -= rep_change
+    author.save()
+
+    # Delete the tip
+    tip.delete()
+    messages.success(request, "Tip has been deleted.")
 
     return redirect('homepage')

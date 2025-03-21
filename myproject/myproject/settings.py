@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'accounts.apps.AccountsConfig',
     'tips.apps.TipsConfig',
 ]
 
@@ -133,5 +134,8 @@ ANONYMOUS_USERNAMES = [
     "Foxtrot", "Golf", "Hotel", "India", "Juliet",
 ]
 
-# 42 秒ルールを明記 (必要なら設定)
+# session duration in seconds
 ANONYMOUS_NAME_DURATION = 42
+
+# specify the custom user model
+AUTH_USER_MODEL = 'accounts.CustomUser'
