@@ -10,7 +10,10 @@ pip install --upgrade pip
 pip install -r requirement.txt
 # Virtual environment remains activated after installation
 echo "Virtualenv django_venv is activated."
-# start server
+# cd to project directory
 cd myproject
+# db migration
+python manage.py makemigrations
 python manage.py migrate
+# run server
 python manage.py runserver

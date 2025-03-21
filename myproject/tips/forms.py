@@ -3,7 +3,8 @@ from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
-
+from django import forms
+from .models import Tip
 
 class RegisterForm(forms.Form):
     username = forms.CharField(label="User name", max_length=150)
@@ -46,3 +47,9 @@ class LoginForm(forms.Form):
                 raise ValidationError("Invalid username or password.")
             self.user = user  # Store for later use in the view
         return cleaned_data
+
+# ModelForm can directly create and update model instances
+class TipForm(forms.ModelForm):
+    class Meta:
+        model = Tip
+        fields = ['content']  # author and created_at will be automatically set

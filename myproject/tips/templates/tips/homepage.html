@@ -2,8 +2,29 @@
 {% extends 'tips/base.html' %}
 
 {% block content %}
-<h1>Welcome to My Tips Site</h1>
-<p>This is the example of the top page.</p>
+<h1>All Tips</h1>
+
+<ul>
+  {% for tip in tips %}
+    <li>
+      <strong>{{ tip.author.username }}</strong>
+      <em>{{ tip.created_at }}</em><br>
+      {{ tip.content }}
+    </li>
+  {% endfor %}
+</ul>
+
+{% if user.is_authenticated %}
+  <h2>Add a new Tip</h2>
+  <form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Submit Tip</button>
+  </form>
+{% else %}
+  <p>You must be logged in to post a new tip.</p>
+{% endif %}
+
 <script>
 // Redirect after 43 seconds (43000 milliseconds) from page load
 setTimeout(function() {

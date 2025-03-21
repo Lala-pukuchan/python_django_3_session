@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm, LoginForm
-from django.contrib.auth import logout as auth_logout
-
+from .models import Tip
+from .forms import TipForm
 
 def homepage(request):
     return render(request, 'tips/homepage.html')
@@ -56,3 +57,36 @@ def login_view(request):
 def logout_view(request):
     auth_logout(request)
     return redirect('homepage')
+
+
+def homepage(request):
+    # 1) 既存のTip一覧を取得 (新しい順で並べる例)
+    tips = Tip.objects.order_by('-created_at')
+
+    # 2) POSTメソッドなら新規投稿を処理
+    if request.method == 'POST':
+        # ログイン中のみ投稿を受け付ける
+        if request.user.is_authenticated:
+            form = TipForm(request.POST)
+            if form.is_valid():
+                tip = form.save(commit=False)
+                tip.author = request.user  # 認証ユーザーをauthorにセット
+                tip.save()
+            # 成功・失敗にかかわらず再度一覧を表示
+            return redirect('homepage')
+        else:
+            # 未ログインは投稿不可
+            return redirect('homepage')
+
+    # 3) GETメソッドなら一覧 + フォームを表示
+    else:
+        if request.user.is_authenticated:
+            form = TipForm()
+        else:
+            form = None
+
+    context = {
+        'tips': tips,
+        'form': form,
+    }
+    return render(request, 'tips/homepage.html', context)
